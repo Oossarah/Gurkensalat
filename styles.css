@@ -230,12 +230,25 @@ h2 {
 
 .upload-dropzone {
   display: grid;
-  place-items: center;
-  align-content: center;
+  align-content: stretch;
   gap: 8px;
   padding: 16px;
   color: var(--muted);
   text-align: center;
+}
+
+.upload-choice {
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  min-height: 0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfaf7;
+}
+
+.upload-choice:hover {
+  background: var(--accent-soft);
 }
 
 .upload-dropzone input {

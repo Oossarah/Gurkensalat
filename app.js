@@ -93,7 +93,10 @@ const voterNameInput = document.querySelector("#voterName");
 const voteCounter = document.querySelector("#voteCounter");
 const orderSummary = document.querySelector("#orderSummary");
 const toast = document.querySelector("#toast");
-const menuPhotoInput = document.querySelector("#menuPhoto");
+const photoInputs = [
+  document.querySelector("#menuPhotoCamera"),
+  document.querySelector("#menuPhotoLibrary"),
+].filter(Boolean);
 const photoPreview = document.querySelector("#photoPreview");
 const previewBox = document.querySelector(".photo-preview");
 const menuTextInput = document.querySelector("#menuText");
@@ -153,35 +156,42 @@ document.querySelector("#finishButton").addEventListener("click", () => {
   showToast(`Festgelegt: ${winners.map((item) => item.name).join(", ")}`);
 });
 
-menuPhotoInput.addEventListener("change", (event) => {
-  const [file] = event.target.files;
-  selectedPhoto = file ?? null;
+photoInputs.forEach((input) => {
+  input.addEventListener("change", (event) => {
+    const [file] = event.target.files;
+    selectedPhoto = file ?? null;
+    photoInputs.forEach((otherInput) => {
+      if (otherInput !== input) otherInput.value = "";
+    });
 
-  if (!selectedPhoto) {
-    photoPreview.removeAttribute("src");
-    previewBox.classList.remove("has-image");
-    setImportStatus("Bereit");
-    return;
-  }
+    if (!selectedPhoto) {
+      photoPreview.removeAttribute("src");
+      previewBox.classList.remove("has-image");
+      setImportStatus("Bereit");
+      return;
+    }
 
-  photoPreview.src = URL.createObjectURL(selectedPhoto);
-  previewBox.classList.add("has-image");
-  setImportStatus("Foto geladen");
+    photoPreview.src = URL.createObjectURL(selectedPhoto);
+    previewBox.classList.add("has-image");
+    setImportStatus("Foto geladen");
+  });
 });
 
 scanPhotoButton.addEventListener("click", async () => {
   if (!selectedPhoto) {
-    showToast("Bitte zuerst ein Foto auswählen.");
-    menuPhotoInput.click();
+    showToast("Bitte zuerst ein Foto aufnehmen oder aus der Mediathek wählen.");
+    photoInputs[0]?.click();
     return;
   }
 
   scanPhotoButton.disabled = true;
-  setImportStatus("Lese Foto");
+  setImportStatus("Optimiere");
 
   try {
     await loadTesseract();
-    const result = await Tesseract.recognize(selectedPhoto, "deu+eng", {
+    const preparedImage = await prepareImageForOcr(selectedPhoto);
+    setImportStatus("Lese Foto");
+    const result = await Tesseract.recognize(preparedImage, "deu+eng", {
       logger: (progress) => {
         if (progress.status === "recognizing text") {
           setImportStatus(`${Math.round(progress.progress * 100)}%`);
@@ -499,8 +509,12 @@ function setSyncStatus(label) {
 function cleanupOcrText(text) {
   return text
     .replace(/[|]/g, " ")
+    .replace(/[“”]/g, "\"")
+    .replace(/[‘’]/g, "'")
+    .replace(/([A-Za-zÄÖÜäöüß])(\d{1,2}[,.]\d{2})/g, "$1 $2")
+    .replace(/(\d{1,2})\s*[,.]\s*(\d{2})/g, "$1,$2")
     .replace(/\s+€/g, " €")
-    .replace(/(\d)[,;](\d{2})/g, "$1,$2")
+    .replace(/(\d)[;:](\d{2})/g, "$1,$2")
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
@@ -511,33 +525,220 @@ function parseMenuText(text) {
   const lines = cleanupOcrText(text)
     .split("\n")
     .map((line) => line.replace(/\s{2,}/g, " ").trim())
-    .filter((line) => line.length > 2);
+    .filter((line) => line.length > 1);
 
   const menuItems = [];
+  const pendingItems = [];
 
   lines.forEach((line) => {
-    const priceMatch = line.match(/(?:€\s*)?(\d{1,2}[,.]\d{2})(?:\s*€)?/);
-    if (!priceMatch) return;
+    const prices = findPrices(line);
+    const withoutPrice = stripPrices(line);
 
-    const price = priceMatch[1].replace(".", ",");
-    const beforePrice = line.slice(0, priceMatch.index).replace(/[.,;:-]+$/g, "").trim();
-    const afterPrice = line.slice(priceMatch.index + priceMatch[0].length).trim();
-    const name = titleCase(beforePrice || afterPrice);
+    if (shouldSkipMenuLine(line)) {
+      return;
+    }
 
-    if (!name || name.length < 3) return;
+    if (prices.length && hasDishText(withoutPrice)) {
+      const parsedText = splitDishText(withoutPrice);
+      addParsedMenuItem(menuItems, parsedText, prices[0]);
+      return;
+    }
 
-    menuItems.push({
-      id: uniqueDishId(name, menuItems),
-      name,
-      price,
-      category: categorizeDish(`${name} ${afterPrice}`),
-      icon: chooseDishIcon(`${name} ${afterPrice}`),
-      description: afterPrice || "Aus der fotografierten Speisekarte übernommen",
-      tags: buildTags(`${name} ${afterPrice}`),
-    });
+    if (prices.length) {
+      prices.forEach((price) => assignPriceToPendingItem(pendingItems, menuItems, price));
+      return;
+    }
+
+    if (isLikelyDishName(line)) {
+      pendingItems.push({
+        title: line,
+        descriptions: [],
+      });
+      return;
+    }
+
+    if (pendingItems.length && isLikelyDescription(line)) {
+      pendingItems[pendingItems.length - 1].descriptions.push(line);
+    }
   });
 
   return menuItems.slice(0, 24);
+}
+
+function assignPriceToPendingItem(pendingItems, menuItems, price) {
+  const pending = pendingItems.shift();
+  if (!pending) return;
+
+  const parsedText = splitDishText(`${pending.title} ${pending.descriptions.join(" ")}`.trim());
+  addParsedMenuItem(menuItems, parsedText, price);
+}
+
+function addParsedMenuItem(menuItems, parsedText, price) {
+  const name = parsedText.name;
+  const description = parsedText.description;
+
+  if (!name || name.length < 3) return;
+  if (menuItems.some((item) => item.name.toLowerCase() === name.toLowerCase())) return;
+
+  menuItems.push({
+    id: uniqueDishId(name, menuItems),
+    name,
+    price,
+    category: categorizeDish(`${name} ${description}`),
+    icon: chooseDishIcon(`${name} ${description}`),
+    description: description || "Aus dem eingefügten Speisekarten-Text übernommen",
+    tags: buildTags(`${name} ${description}`),
+  });
+}
+
+function splitDishText(value) {
+  const cleaned = value
+    .replace(/\b\d+[a-z]?\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  const romanized = cleaned.match(/（([^（）]{2,45})）|\(([^()]{2,45})\)/);
+  const germanStart = cleaned.search(/\b(geschmorte|gebratene|gebratener|sauer|scharfes|spezieller|salat|oktopus|dünn|fischfilet|tofu|lammfleisch|rindfleisch|garnelen|morcheln|variation|frittiertes|zartes|würziges|chinesische)\b/i);
+  let rawName = "";
+  let description = "";
+
+  if (romanized) {
+    rawName = romanized[1] || romanized[2];
+    description = cleaned.slice((romanized.index ?? 0) + romanized[0].length).trim();
+  } else if (germanStart > 8) {
+    rawName = cleaned.slice(0, germanStart).trim();
+    description = cleaned.slice(germanStart).trim();
+  } else {
+    const parts = cleaned.split(/\s[-–—]\s|(?:\s{2,})|(?:,\s+)/).filter(Boolean);
+    rawName = parts.shift() || cleaned;
+    description = parts.join(", ");
+  }
+
+  if (!description) {
+    const words = rawName.split(" ");
+    const ingredientIndex = words.findIndex((word, index) => {
+      return index >= 2 && isIngredientWord(word);
+    });
+
+    if (ingredientIndex > -1) {
+      description = words.slice(ingredientIndex).join(" ");
+      rawName = words.slice(0, ingredientIndex).join(" ");
+    }
+  }
+
+  return {
+    name: titleCase(cleanDishName(rawName)),
+    description: description ? sentenceCase(cleanDescription(description)) : "",
+  };
+}
+
+function findPrices(line) {
+  return [...line.matchAll(/(?:€\s*)?(\d{1,2}[,.]\d{2})(?:\s*€)?/g)].map((match) =>
+    match[1].replace(".", ","),
+  );
+}
+
+function stripPrices(line) {
+  return line.replace(/(?:€\s*)?\d{1,2}[,.]\d{2}(?:\s*€)?/g, "").replace(/\s{2,}/g, " ").trim();
+}
+
+function hasDishText(line) {
+  return cleanDishName(line).length >= 3 && !isLikelyDescription(line);
+}
+
+function shouldSkipMenuLine(line) {
+  const lower = line.toLowerCase();
+  return (
+    isLikelyHeading(line) ||
+    isLikelyChineseHeading(line) ||
+    /^€$/.test(line) ||
+    /^\d{1,3}$/.test(line) ||
+    /^(\(?[a-z](,[a-z])*\)?)+$/i.test(line.replace(/\s/g, "")) ||
+    /yummy house|vor einem jahr|pepper|starters|soup for|house specialties/.test(lower)
+  );
+}
+
+function isLikelyDishName(line) {
+  if (shouldSkipMenuLine(line)) return false;
+  if (/[\u3400-\u9fff]/.test(line)) return true;
+  if (/（[^（）]{2,45}）|\([^()]{2,45}\)/.test(line) && !isLikelyDescription(line)) return true;
+  return /^[A-ZÄÖÜ][A-Za-zÄÖÜäöüß\s'’-]{3,60}$/.test(line) && !isLikelyDescription(line);
+}
+
+function isLikelyDescription(line) {
+  return /\b(mit|vom|von|nach|in|und|with|fried|braised|sour|spicy|salad|beef|lamb|pork|fish|tofu|sauce|suppe|scharf|geschmort|geschmorte|gebraten|gebratene|frittiert|frittierte|mariniert|marinierten|speziell|spezieller|oktopus|oktopusstücke|dünn|sauer)\b/i.test(line);
+}
+
+function cleanDishName(value) {
+  return value
+    .replace(/[\u3400-\u9fff]/g, "")
+    .replace(/[（）()]/g, " ")
+    .replace(/\b[A-Z](?:[,.][A-Z])+\b/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function cleanDescription(value) {
+  return value
+    .replace(/^[（(]\s*[A-Z](?:[,.，]\s*[A-Z])*\s*[）)]/i, "")
+    .replace(/^€\s*/, "")
+    .replace(/[（）]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function isLikelyChineseHeading(line) {
+  const chineseChars = (line.match(/[\u3400-\u9fff]/g) || []).length;
+  return chineseChars > 0 && chineseChars <= 5 && !/[()（）]/.test(line) && line.length <= 12;
+}
+
+function isIngredientWord(word) {
+  return /^(tomaten|tomate|mozzarella|basilikum|avocado|gurke|reis|sesam|gemüse|pilze|pilz|lachs|huhn|rind|tofu|käse|salat|zwiebel|chili|limette|koriander|kartoffel|nudeln|sauce|salsa)$/i.test(word);
+}
+
+function isLikelyHeading(line) {
+  const lower = line.toLowerCase();
+  return (
+    /^(vorspeisen|hauptgerichte|pasta|pizza|salate|dessert|drinks|getränke|speisen)$/.test(lower) ||
+    /^seite\s+\d+/.test(lower)
+  );
+}
+
+function sentenceCase(value) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function prepareImageForOcr(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const maxWidth = 1800;
+      const scale = Math.min(maxWidth / image.width, 1);
+      const width = Math.max(Math.round(image.width * scale), 1);
+      const height = Math.max(Math.round(image.height * scale), 1);
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      canvas.width = width;
+      canvas.height = height;
+
+      context.drawImage(image, 0, 0, width, height);
+      const imageData = context.getImageData(0, 0, width, height);
+      const data = imageData.data;
+
+      for (let index = 0; index < data.length; index += 4) {
+        const gray = data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
+        const contrasted = Math.max(0, Math.min(255, (gray - 128) * 1.55 + 128));
+        const cleaned = contrasted > 210 ? 255 : contrasted < 92 ? 0 : contrasted;
+        data[index] = cleaned;
+        data[index + 1] = cleaned;
+        data[index + 2] = cleaned;
+      }
+
+      context.putImageData(imageData, 0, 0);
+      resolve(canvas);
+    };
+    image.onerror = reject;
+    image.src = URL.createObjectURL(file);
+  });
 }
 
 function titleCase(value) {

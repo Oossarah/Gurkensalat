@@ -44,12 +44,20 @@
         </div>
 
         <div class="import-grid">
-          <label class="upload-dropzone">
-            <input id="menuPhoto" type="file" accept="image/*" capture="environment" />
-            <span class="upload-icon" aria-hidden="true">▣</span>
-            <strong>Foto auswählen</strong>
-            <span>oder direkt mit der Kamera aufnehmen</span>
-          </label>
+          <div class="upload-dropzone">
+            <label class="upload-choice">
+              <input id="menuPhotoCamera" type="file" accept="image/*" capture="environment" />
+              <span class="upload-icon" aria-hidden="true">▣</span>
+              <strong>Foto aufnehmen</strong>
+              <span>Kamera öffnen</span>
+            </label>
+            <label class="upload-choice">
+              <input id="menuPhotoLibrary" type="file" accept="image/*" />
+              <span class="upload-icon" aria-hidden="true">▤</span>
+              <strong>Aus Mediathek wählen</strong>
+              <span>Vorhandenes Bild nutzen</span>
+            </label>
+          </div>
 
           <div class="photo-preview" aria-label="Foto Vorschau">
             <img id="photoPreview" alt="Vorschau der fotografierten Speisekarte" />
@@ -57,22 +65,22 @@
           </div>
 
           <label class="ocr-field">
-            <span>Erkannter Text</span>
+            <span>Speisekarten-Text</span>
             <textarea
               id="menuText"
-              rows="8"
-              placeholder="Hier erscheint der erkannte Text. Du kannst ihn vor dem Übernehmen korrigieren."
+              rows="10"
+              placeholder="Text aus der iPhone-Texterkennung hier einfügen. Danach auf „Menü übernehmen“ tippen."
             ></textarea>
           </label>
         </div>
 
         <div class="import-actions">
           <button id="scanPhotoButton" class="secondary-button" type="button">Foto auslesen</button>
-          <button id="applyMenuButton" class="finish-button import-apply" type="button">Menü übernehmen</button>
+          <button id="applyMenuButton" class="finish-button import-apply" type="button">Text als Menü übernehmen</button>
         </div>
         <p id="importHint" class="import-hint">
-          Foto-Erkennung lädt eine OCR-Bibliothek nach. Falls das blockiert ist,
-          kannst du den Speisekarten-Text in das Feld einfügen und direkt übernehmen.
+          Am zuverlässigsten: iPhone-Foto öffnen, Text erkennen, alles kopieren
+          und hier einfügen. Preise dürfen auch in eigenen Zeilen stehen.
         </p>
       </section>
 
