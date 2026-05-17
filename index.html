@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tischwahl</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Gemeinsam bestellen</p>
+          <h1>Tischwahl</h1>
+        </div>
+        <div class="table-code" aria-label="Tischcode">
+          <span>Raum</span>
+          <strong id="roomCode">tischwahl</strong>
+          <small id="syncStatus">Lokal</small>
+        </div>
+      </header>
+
+      <section class="control-strip" aria-label="Aktuelle Abstimmung">
+        <label class="name-field">
+          <span>Dein Name</span>
+          <input id="voterName" type="text" autocomplete="name" placeholder="z. B. Sarah" />
+        </label>
+
+        <div class="filter-group" role="tablist" aria-label="Kategorie">
+          <button class="filter-button active" type="button" data-filter="all">Alle</button>
+          <button class="filter-button" type="button" data-filter="main">Hauptgerichte</button>
+          <button class="filter-button" type="button" data-filter="light">Leicht</button>
+          <button class="filter-button" type="button" data-filter="veggie">Veggie</button>
+        </div>
+      </section>
+
+      <section class="import-panel" aria-label="Speisekarte aus Foto erstellen">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Foto Import</p>
+            <h2>Speisekarte fotografieren</h2>
+          </div>
+          <span id="importStatus" class="import-status">Bereit</span>
+        </div>
+
+        <div class="import-grid">
+          <label class="upload-dropzone">
+            <input id="menuPhoto" type="file" accept="image/*" capture="environment" />
+            <span class="upload-icon" aria-hidden="true">▣</span>
+            <strong>Foto auswählen</strong>
+            <span>oder direkt mit der Kamera aufnehmen</span>
+          </label>
+
+          <div class="photo-preview" aria-label="Foto Vorschau">
+            <img id="photoPreview" alt="Vorschau der fotografierten Speisekarte" />
+            <span id="emptyPreview">Noch kein Foto ausgewählt</span>
+          </div>
+
+          <label class="ocr-field">
+            <span>Erkannter Text</span>
+            <textarea
+              id="menuText"
+              rows="8"
+              placeholder="Hier erscheint der erkannte Text. Du kannst ihn vor dem Übernehmen korrigieren."
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="import-actions">
+          <button id="scanPhotoButton" class="secondary-button" type="button">Foto auslesen</button>
+          <button id="applyMenuButton" class="finish-button import-apply" type="button">Menü übernehmen</button>
+        </div>
+        <p id="importHint" class="import-hint">
+          Foto-Erkennung lädt eine OCR-Bibliothek nach. Falls das blockiert ist,
+          kannst du den Speisekarten-Text in das Feld einfügen und direkt übernehmen.
+        </p>
+      </section>
+
+      <section class="content-grid">
+        <section class="menu-panel" aria-label="Speisekarte">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Speisekarte</p>
+              <h2>Wähle bis zu 3 Favoriten</h2>
+            </div>
+            <span id="voteCounter" class="counter">0/3</span>
+          </div>
+          <div id="menuList" class="menu-list"></div>
+        </section>
+
+        <aside class="results-panel" aria-label="Ergebnis">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Live Ergebnis</p>
+              <h2>Favoriten der Gruppe</h2>
+            </div>
+            <button id="resetButton" class="icon-button" type="button" title="Abstimmung zurücksetzen" aria-label="Abstimmung zurücksetzen">
+              ↺
+            </button>
+          </div>
+
+          <div id="resultsList" class="results-list"></div>
+
+          <div class="order-box">
+            <p class="eyebrow">Bestellvorschlag</p>
+            <div id="orderSummary" class="order-summary"></div>
+            <button id="finishButton" class="finish-button" type="button">Auswahl festlegen</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
