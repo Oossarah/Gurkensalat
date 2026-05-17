@@ -219,6 +219,26 @@ h2 {
   gap: 12px;
 }
 
+.capture-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.55fr);
+  gap: 12px;
+}
+
+.quick-guide {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.quick-guide ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.48;
+}
+
 .upload-dropzone,
 .photo-preview,
 .ocr-field {
@@ -314,7 +334,7 @@ h2 {
 
 .ocr-field textarea {
   width: 100%;
-  min-height: 130px;
+  min-height: 260px;
   resize: vertical;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -323,6 +343,96 @@ h2 {
   color: var(--ink);
   outline: none;
   line-height: 1.38;
+}
+
+.review-panel,
+.share-panel {
+  margin-top: 16px;
+  border: 1px solid rgba(222, 216, 204, 0.85);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+  padding: 18px;
+}
+
+.draft-list {
+  display: grid;
+  gap: 10px;
+}
+
+.empty-state {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  color: var(--muted);
+  background: #fbfaf7;
+  text-align: center;
+}
+
+.draft-row {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.45fr) minmax(170px, 1fr) minmax(86px, 0.4fr) minmax(220px, 1.3fr) 42px;
+  gap: 8px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface);
+}
+
+.draft-row label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.draft-row input,
+.share-tools input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fbfaf7;
+  color: var(--ink);
+  outline: none;
+}
+
+.draft-row input:focus,
+.share-tools input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.draft-toggle {
+  align-self: center;
+}
+
+.draft-toggle input {
+  width: 20px;
+  min-height: 20px;
+  margin: 0 auto;
+  accent-color: var(--accent);
+}
+
+.draft-remove {
+  align-self: end;
+}
+
+.share-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.5fr) minmax(0, 1.5fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.share-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
 }
 
 .ocr-field textarea:focus {
@@ -602,12 +712,30 @@ h2 {
 
 @media (max-width: 880px) {
   .control-strip,
+  .capture-grid,
   .import-grid,
+  .share-panel,
   .content-grid {
     grid-template-columns: 1fr;
   }
 
   .menu-list {
+    grid-template-columns: 1fr;
+  }
+
+  .draft-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .draft-description {
+    grid-column: 1 / -1;
+  }
+
+  .draft-remove {
+    width: 100%;
+  }
+
+  .share-tools {
     grid-template-columns: 1fr;
   }
 }

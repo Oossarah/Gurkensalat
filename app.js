@@ -68,17 +68,18 @@ const defaultState = {
   filter: "all",
   dishes: defaultDishes,
   votes: {
-    ramen: ["Mira", "Jonas"],
-    bowl: ["Lea"],
-    pizza: ["Mira"],
-    curry: ["Noah", "Lea"],
+    ramen: [],
+    bowl: [],
+    pizza: [],
+    curry: [],
     tacos: [],
-    salmon: ["Jonas"],
+    salmon: [],
   },
 };
 
 let state = loadState();
 let dishes = state.dishes?.length ? state.dishes : structuredClone(defaultDishes);
+let draftDishes = [];
 let selectedPhoto = null;
 let tesseractLoading = null;
 let toastTimer;
@@ -101,13 +102,22 @@ const photoPreview = document.querySelector("#photoPreview");
 const previewBox = document.querySelector(".photo-preview");
 const menuTextInput = document.querySelector("#menuText");
 const scanPhotoButton = document.querySelector("#scanPhotoButton");
-const applyMenuButton = document.querySelector("#applyMenuButton");
+const parseTextButton = document.querySelector("#parseTextButton");
+const sampleTextButton = document.querySelector("#sampleTextButton");
+const publishMenuButton = document.querySelector("#publishMenuButton");
+const clearDraftButton = document.querySelector("#clearDraftButton");
+const draftMenuList = document.querySelector("#draftMenuList");
+const draftCounter = document.querySelector("#draftCounter");
+const shareLinkInput = document.querySelector("#shareLink");
+const copyLinkButton = document.querySelector("#copyLinkButton");
+const newRoomButton = document.querySelector("#newRoomButton");
 const importStatus = document.querySelector("#importStatus");
 const roomCode = document.querySelector("#roomCode");
 const syncStatus = document.querySelector("#syncStatus");
 
 voterNameInput.value = state.voterName;
 roomCode.textContent = roomId;
+shareLinkInput.value = getShareUrl();
 
 document.querySelectorAll(".filter-button").forEach((button) => {
   button.addEventListener("click", () => {
@@ -177,7 +187,7 @@ photoInputs.forEach((input) => {
   });
 });
 
-scanPhotoButton.addEventListener("click", async () => {
+scanPhotoButton?.addEventListener("click", async () => {
   if (!selectedPhoto) {
     showToast("Bitte zuerst ein Foto aufnehmen oder aus der Mediathek wählen.");
     photoInputs[0]?.click();
@@ -212,7 +222,7 @@ scanPhotoButton.addEventListener("click", async () => {
   }
 });
 
-applyMenuButton.addEventListener("click", () => {
+parseTextButton.addEventListener("click", () => {
   const parsedDishes = parseMenuText(menuTextInput.value);
 
   if (!parsedDishes.length) {
@@ -221,14 +231,63 @@ applyMenuButton.addEventListener("click", () => {
     return;
   }
 
-  dishes = parsedDishes;
-  state.dishes = parsedDishes;
+  draftDishes = parsedDishes;
+  renderDraftMenu();
+  setImportStatus(`${parsedDishes.length} Gerichte`);
+  showToast(`${parsedDishes.length} Gerichte erkannt. Bitte kurz prüfen.`);
+});
+
+publishMenuButton.addEventListener("click", () => {
+  const approvedDishes = getApprovedDraftDishes();
+
+  if (!approvedDishes.length) {
+    showToast("Bitte zuerst ein Menü erkennen oder mindestens ein Gericht aktiv lassen.");
+    return;
+  }
+
+  dishes = approvedDishes;
+  state.dishes = approvedDishes;
   state.filter = "all";
   state.votes = Object.fromEntries(dishes.map((dish) => [dish.id, []]));
   saveState();
   render();
-  setImportStatus(`${parsedDishes.length} Gerichte`);
-  showToast(`${parsedDishes.length} Gerichte übernommen.`);
+  showToast("Abstimmung ist gestartet. Du kannst den Link teilen.");
+});
+
+clearDraftButton.addEventListener("click", () => {
+  draftDishes = [];
+  renderDraftMenu();
+  setImportStatus("Bereit");
+});
+
+sampleTextButton.addEventListener("click", () => {
+  menuTextInput.value = [
+    "Pizza Margherita Tomaten, Mozzarella, Basilikum 10,90",
+    "Kokos Curry Gemüse, Kichererbsen, Jasminreis 13,20",
+    "Lachs Teriyaki Lachs, Reis, Gurkensalat 16,50",
+    "Pilz Tacos Mais-Tortillas, Kraut, Salsa verde 11,90",
+  ].join("\n");
+  showToast("Beispieltext eingesetzt.");
+});
+
+copyLinkButton.addEventListener("click", async () => {
+  const link = getShareUrl();
+  shareLinkInput.value = link;
+
+  try {
+    await navigator.clipboard.writeText(link);
+    showToast("Link kopiert.");
+  } catch {
+    shareLinkInput.select();
+    showToast("Link ist markiert und kann kopiert werden.");
+  }
+});
+
+newRoomButton.addEventListener("click", () => {
+  const room = `tisch-${Math.random().toString(36).slice(2, 7)}`;
+  const url = new URL(window.location.href);
+  url.searchParams.set("room", room);
+  window.location.href = url.toString();
 });
 
 function loadState() {
@@ -269,6 +328,7 @@ function render() {
   renderFilters();
   renderMenu();
   renderResults();
+  renderDraftMenu();
 }
 
 function renderFilters() {
@@ -338,6 +398,93 @@ function renderResults() {
   orderSummary.textContent = leaders.length
     ? leaders.map((dish) => `${dish.name} (${dish.count})`).join(" und ")
     : "Noch offen";
+}
+
+function renderDraftMenu() {
+  draftCounter.textContent = String(draftDishes.length);
+
+  if (!draftDishes.length) {
+    draftMenuList.innerHTML = `
+      <div class="empty-state">
+        Füge Speisekarten-Text ein und tippe auf „Menü erkennen“.
+      </div>
+    `;
+    return;
+  }
+
+  draftMenuList.innerHTML = draftDishes
+    .map((dish, index) => {
+      return `
+        <article class="draft-row" data-index="${index}">
+          <label class="draft-toggle">
+            <input type="checkbox" data-field="included" ${dish.included === false ? "" : "checked"} />
+            <span>Aufnehmen</span>
+          </label>
+          <label>
+            <span>Name</span>
+            <input type="text" data-field="name" value="${escapeHtml(dish.name)}" />
+          </label>
+          <label>
+            <span>Preis</span>
+            <input type="text" data-field="price" value="${escapeHtml(dish.price)}" />
+          </label>
+          <label class="draft-description">
+            <span>Beschreibung</span>
+            <input type="text" data-field="description" value="${escapeHtml(dish.description)}" />
+          </label>
+          <button class="icon-button draft-remove" type="button" data-action="remove" aria-label="Gericht entfernen">×</button>
+        </article>
+      `;
+    })
+    .join("");
+
+  draftMenuList.querySelectorAll("input").forEach((input) => {
+    input.addEventListener("input", updateDraftFromControl);
+    input.addEventListener("change", updateDraftFromControl);
+  });
+
+  draftMenuList.querySelectorAll("[data-action='remove']").forEach((button) => {
+    button.addEventListener("click", () => {
+      draftDishes.splice(Number(button.closest(".draft-row").dataset.index), 1);
+      renderDraftMenu();
+    });
+  });
+}
+
+function updateDraftFromControl(event) {
+  const row = event.target.closest(".draft-row");
+  const dish = draftDishes[Number(row.dataset.index)];
+  const field = event.target.dataset.field;
+
+  if (!dish || !field) return;
+
+  if (field === "included") {
+    dish.included = event.target.checked;
+  } else {
+    dish[field] = event.target.value;
+  }
+}
+
+function getApprovedDraftDishes() {
+  const approvedDishes = [];
+
+  draftDishes
+    .filter((dish) => dish.included !== false && dish.name.trim())
+    .forEach((dish) => {
+      const name = dish.name.trim();
+      const description = dish.description.trim();
+      approvedDishes.push({
+        id: uniqueDishId(name, approvedDishes),
+        name,
+        price: dish.price.trim() || "0,00",
+        category: categorizeDish(`${name} ${description}`),
+        icon: chooseDishIcon(`${name} ${description}`),
+        description: description || "Aus dem eingefügten Speisekarten-Text übernommen",
+        tags: buildTags(`${name} ${description}`),
+      });
+    });
+
+  return approvedDishes;
 }
 
 function toggleVote(dishId) {
@@ -500,6 +647,13 @@ function getRoomId() {
     .replace(/[^a-z0-9-]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 32) || "tischwahl";
+}
+
+function getShareUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("room", roomId);
+  url.hash = "";
+  return url.toString();
 }
 
 function setSyncStatus(label) {

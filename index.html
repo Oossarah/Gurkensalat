@@ -20,6 +20,72 @@
         </div>
       </header>
 
+      <section class="import-panel" aria-label="Speisekarte erfassen">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Schritt 1</p>
+            <h2>iPhone-Text einfügen</h2>
+          </div>
+          <span id="importStatus" class="import-status">Bereit</span>
+        </div>
+
+        <div class="capture-grid">
+          <label class="ocr-field">
+            <span>Speisekarten-Text</span>
+            <textarea
+              id="menuText"
+              rows="12"
+              placeholder="iPhone-Foto öffnen → Text erkennen → alles kopieren → hier einfügen"
+            ></textarea>
+          </label>
+
+          <aside class="quick-guide" aria-label="Kurzanleitung">
+            <p class="eyebrow">Schneller Ablauf</p>
+            <ol>
+              <li>Speisekarte mit dem iPhone fotografieren.</li>
+              <li>Text im Foto markieren und kopieren.</li>
+              <li>Hier einfügen und Menü erkennen lassen.</li>
+              <li>Erkannte Gerichte kurz prüfen.</li>
+              <li>Abstimmung starten und Link teilen.</li>
+            </ol>
+          </aside>
+        </div>
+
+        <div class="import-actions">
+          <button id="sampleTextButton" class="secondary-button" type="button">Beispiel einsetzen</button>
+          <button id="parseTextButton" class="finish-button import-apply" type="button">Menü erkennen</button>
+        </div>
+      </section>
+
+      <section class="review-panel" aria-label="Erkanntes Menü prüfen">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Schritt 2</p>
+            <h2>Menü prüfen</h2>
+          </div>
+          <span id="draftCounter" class="counter">0</span>
+        </div>
+
+        <div id="draftMenuList" class="draft-list"></div>
+
+        <div class="import-actions">
+          <button id="clearDraftButton" class="secondary-button" type="button">Liste leeren</button>
+          <button id="publishMenuButton" class="finish-button import-apply" type="button">Abstimmung starten</button>
+        </div>
+      </section>
+
+      <section class="share-panel" aria-label="Abstimmung teilen">
+        <div>
+          <p class="eyebrow">Schritt 3</p>
+          <h2>Link teilen</h2>
+        </div>
+        <div class="share-tools">
+          <input id="shareLink" type="text" readonly aria-label="Abstimmungslink" />
+          <button id="copyLinkButton" class="secondary-button" type="button">Link kopieren</button>
+          <button id="newRoomButton" class="secondary-button" type="button">Neuer Raum</button>
+        </div>
+      </section>
+
       <section class="control-strip" aria-label="Aktuelle Abstimmung">
         <label class="name-field">
           <span>Dein Name</span>
@@ -32,56 +98,6 @@
           <button class="filter-button" type="button" data-filter="light">Leicht</button>
           <button class="filter-button" type="button" data-filter="veggie">Veggie</button>
         </div>
-      </section>
-
-      <section class="import-panel" aria-label="Speisekarte aus Foto erstellen">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Foto Import</p>
-            <h2>Speisekarte fotografieren</h2>
-          </div>
-          <span id="importStatus" class="import-status">Bereit</span>
-        </div>
-
-        <div class="import-grid">
-          <div class="upload-dropzone">
-            <label class="upload-choice">
-              <input id="menuPhotoCamera" type="file" accept="image/*" capture="environment" />
-              <span class="upload-icon" aria-hidden="true">▣</span>
-              <strong>Foto aufnehmen</strong>
-              <span>Kamera öffnen</span>
-            </label>
-            <label class="upload-choice">
-              <input id="menuPhotoLibrary" type="file" accept="image/*" />
-              <span class="upload-icon" aria-hidden="true">▤</span>
-              <strong>Aus Mediathek wählen</strong>
-              <span>Vorhandenes Bild nutzen</span>
-            </label>
-          </div>
-
-          <div class="photo-preview" aria-label="Foto Vorschau">
-            <img id="photoPreview" alt="Vorschau der fotografierten Speisekarte" />
-            <span id="emptyPreview">Noch kein Foto ausgewählt</span>
-          </div>
-
-          <label class="ocr-field">
-            <span>Speisekarten-Text</span>
-            <textarea
-              id="menuText"
-              rows="10"
-              placeholder="Text aus der iPhone-Texterkennung hier einfügen. Danach auf „Menü übernehmen“ tippen."
-            ></textarea>
-          </label>
-        </div>
-
-        <div class="import-actions">
-          <button id="scanPhotoButton" class="secondary-button" type="button">Foto auslesen</button>
-          <button id="applyMenuButton" class="finish-button import-apply" type="button">Text als Menü übernehmen</button>
-        </div>
-        <p id="importHint" class="import-hint">
-          Am zuverlässigsten: iPhone-Foto öffnen, Text erkennen, alles kopieren
-          und hier einfügen. Preise dürfen auch in eigenen Zeilen stehen.
-        </p>
       </section>
 
       <section class="content-grid">
