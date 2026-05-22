@@ -3,100 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tischwahl</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <title>Tischwahl - The Sichuan</title>
+    <link rel="stylesheet" href="./styles.css?v=4" />
   </head>
   <body>
     <main class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Gemeinsam bestellen</p>
+          <p class="eyebrow">The Sichuan</p>
           <h1>Tischwahl</h1>
         </div>
-        <div class="table-code" aria-label="Tischcode">
+        <div class="room-badge" aria-label="Abstimmungsraum">
           <span>Raum</span>
           <strong id="roomCode">tischwahl</strong>
           <small id="syncStatus">Lokal</small>
         </div>
       </header>
 
-      <section class="import-panel" aria-label="Speisekarte erfassen">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Schritt 1</p>
-            <h2>iPhone-Text einfügen</h2>
-          </div>
-          <span id="importStatus" class="import-status">Bereit</span>
-        </div>
-
-        <div class="capture-grid">
-          <label class="ocr-field">
-            <span>Speisekarten-Text</span>
-            <textarea
-              id="menuText"
-              rows="12"
-              placeholder="iPhone-Foto öffnen → Text erkennen → alles kopieren → hier einfügen"
-            ></textarea>
-          </label>
-
-          <aside class="quick-guide" aria-label="Kurzanleitung">
-            <p class="eyebrow">Schneller Ablauf</p>
-            <ol>
-              <li>Speisekarte mit dem iPhone fotografieren.</li>
-              <li>Text im Foto markieren und kopieren.</li>
-              <li>Hier einfügen und Menü erkennen lassen.</li>
-              <li>Erkannte Gerichte kurz prüfen.</li>
-              <li>Abstimmung starten und Link teilen.</li>
-            </ol>
-          </aside>
-        </div>
-
-        <div class="import-actions">
-          <button id="sampleTextButton" class="secondary-button" type="button">Beispiel einsetzen</button>
-          <button id="parseTextButton" class="finish-button import-apply" type="button">Menü erkennen</button>
-        </div>
-      </section>
-
-      <section class="review-panel" aria-label="Erkanntes Menü prüfen">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Schritt 2</p>
-            <h2>Menü prüfen</h2>
-          </div>
-          <span id="draftCounter" class="counter">0</span>
-        </div>
-
-        <div id="draftMenuList" class="draft-list"></div>
-
-        <div class="import-actions">
-          <button id="clearDraftButton" class="secondary-button" type="button">Liste leeren</button>
-          <button id="publishMenuButton" class="finish-button import-apply" type="button">Abstimmung starten</button>
-        </div>
-      </section>
-
       <section class="share-panel" aria-label="Abstimmung teilen">
-        <div>
-          <p class="eyebrow">Schritt 3</p>
-          <h2>Link teilen</h2>
-        </div>
-        <div class="share-tools">
-          <input id="shareLink" type="text" readonly aria-label="Abstimmungslink" />
-          <button id="copyLinkButton" class="secondary-button" type="button">Link kopieren</button>
-          <button id="newRoomButton" class="secondary-button" type="button">Neuer Raum</button>
-        </div>
-      </section>
-
-      <section class="control-strip" aria-label="Aktuelle Abstimmung">
         <label class="name-field">
           <span>Dein Name</span>
           <input id="voterName" type="text" autocomplete="name" placeholder="z. B. Sarah" />
         </label>
+        <label class="share-field">
+          <span>Link für die Gruppe</span>
+          <input id="shareLink" type="text" readonly />
+        </label>
+        <button id="copyLinkButton" class="secondary-button" type="button">Link kopieren</button>
+        <button id="newRoomButton" class="secondary-button" type="button">Neuer Raum</button>
+      </section>
 
-        <div class="filter-group" role="tablist" aria-label="Kategorie">
-          <button class="filter-button active" type="button" data-filter="all">Alle</button>
-          <button class="filter-button" type="button" data-filter="main">Hauptgerichte</button>
-          <button class="filter-button" type="button" data-filter="light">Leicht</button>
-          <button class="filter-button" type="button" data-filter="veggie">Veggie</button>
+      <section class="toolbar" aria-label="Menü filtern">
+        <label class="search-field">
+          <span>Gericht suchen</span>
+          <input id="searchInput" type="search" placeholder="z. B. Huhn, Tofu, scharf" />
+        </label>
+        <label class="select-field">
+          <span>Kategorie</span>
+          <select id="sectionFilter"></select>
+        </label>
+        <label class="select-field">
+          <span>Ansicht</span>
+          <select id="viewFilter">
+            <option value="all">Alle Gerichte</option>
+            <option value="selected">Meine Auswahl</option>
+            <option value="popular">Mit Stimmen</option>
+          </select>
+        </label>
+        <div class="selection-counter">
+          <span id="voteCounter">0</span>
+          <small>gewählt</small>
         </div>
       </section>
 
@@ -105,9 +61,9 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Speisekarte</p>
-              <h2>Wähle bis zu 3 Favoriten</h2>
+              <h2 id="menuHeading">177 Gerichte</h2>
             </div>
-            <span id="voteCounter" class="counter">0/3</span>
+            <button id="clearMyVotesButton" class="secondary-button compact" type="button">Meine Auswahl leeren</button>
           </div>
           <div id="menuList" class="menu-list"></div>
         </section>
@@ -118,17 +74,14 @@
               <p class="eyebrow">Live Ergebnis</p>
               <h2>Favoriten der Gruppe</h2>
             </div>
-            <button id="resetButton" class="icon-button" type="button" title="Abstimmung zurücksetzen" aria-label="Abstimmung zurücksetzen">
+            <button id="resetButton" class="icon-button" type="button" title="Alle Stimmen zurücksetzen" aria-label="Alle Stimmen zurücksetzen">
               ↺
             </button>
           </div>
-
           <div id="resultsList" class="results-list"></div>
-
           <div class="order-box">
             <p class="eyebrow">Bestellvorschlag</p>
             <div id="orderSummary" class="order-summary"></div>
-            <button id="finishButton" class="finish-button" type="button">Auswahl festlegen</button>
           </div>
         </aside>
       </section>
@@ -136,6 +89,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js"></script>
+    <script src="./menu-data.js?v=4"></script>
+    <script src="./app.js?v=4"></script>
   </body>
 </html>
