@@ -3,41 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tischwahl - The Sichuan</title>
-    <link rel="stylesheet" href="./styles.css?v=4" />
+    <title>Gurkensalat - The Sichuan</title>
+    <link rel="stylesheet" href="./styles.css?v=8" />
   </head>
   <body>
     <main class="app-shell">
       <header class="topbar">
         <div>
           <p class="eyebrow">The Sichuan</p>
-          <h1>Tischwahl</h1>
+          <h1>Gurkensalat</h1>
         </div>
         <div class="room-badge" aria-label="Abstimmungsraum">
-          <span>Raum</span>
-          <strong id="roomCode">tischwahl</strong>
-          <small id="syncStatus">Lokal</small>
+          <label class="badge-name-field">
+            <span>Dein Name</span>
+            <input id="voterName" type="text" autocomplete="name" placeholder="z. B. Sarah" />
+          </label>
+          <small><span id="roomCode">gurkensalat</span> · <span id="syncStatus">Lokal</span></small>
         </div>
       </header>
 
       <nav class="sticky-nav" aria-label="Schnellnavigation">
         <a href="#menuSection">Speisekarte</a>
         <a href="#resultsSection">Ergebnisse</a>
-        <a href="#shareSection">Teilen</a>
+        <a href="#settingsSection">Einstellungen</a>
       </nav>
-
-      <section id="shareSection" class="share-panel" aria-label="Abstimmung teilen">
-        <label class="name-field">
-          <span>Dein Name</span>
-          <input id="voterName" type="text" autocomplete="name" placeholder="z. B. Sarah" />
-        </label>
-        <label class="share-field">
-          <span>Link für die Gruppe</span>
-          <input id="shareLink" type="text" readonly />
-        </label>
-        <button id="copyLinkButton" class="secondary-button" type="button">Link kopieren</button>
-        <button id="newRoomButton" class="secondary-button" type="button">Neuer Raum</button>
-      </section>
 
       <section class="toolbar" aria-label="Menü filtern">
         <label class="search-field">
@@ -69,7 +58,6 @@
               <p class="eyebrow">Speisekarte</p>
               <h2 id="menuHeading">177 Gerichte</h2>
             </div>
-            <button id="clearMyVotesButton" class="secondary-button compact" type="button">Meine Auswahl leeren</button>
           </div>
           <div id="menuList" class="menu-list"></div>
         </section>
@@ -80,9 +68,6 @@
               <p class="eyebrow">Live Ergebnis</p>
               <h2>Favoriten der Gruppe</h2>
             </div>
-            <button id="resetButton" class="icon-button" type="button" title="Alle Stimmen zurücksetzen" aria-label="Alle Stimmen zurücksetzen">
-              ↺
-            </button>
           </div>
           <div id="resultsList" class="results-list"></div>
           <div class="order-box">
@@ -91,11 +76,30 @@
           </div>
         </aside>
       </section>
+
+      <section id="settingsSection" class="settings-panel" aria-label="Einstellungen">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Einstellungen</p>
+            <h2>Gruppe und Abstimmung</h2>
+          </div>
+        </div>
+        <div class="settings-grid">
+          <label class="share-field">
+            <span>Link für die Gruppe</span>
+            <input id="shareLink" type="text" readonly />
+          </label>
+          <button id="copyLinkButton" class="secondary-button" type="button">Link kopieren</button>
+          <button id="newRoomButton" class="secondary-button" type="button">Neuer Raum</button>
+          <button id="clearMyVotesButton" class="secondary-button" type="button">Meine Auswahl leeren</button>
+          <button id="resetButton" class="secondary-button danger-button" type="button">Alle Stimmen zurücksetzen</button>
+        </div>
+      </section>
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./menu-data.js?v=4"></script>
-    <script src="./app.js?v=4"></script>
+    <script src="./menu-data.js?v=8"></script>
+    <script src="./app.js?v=8"></script>
   </body>
 </html>

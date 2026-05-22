@@ -16,6 +16,7 @@ let saveRemoteTimer = null;
 let toastTimer = null;
 
 const roomCode = document.querySelector("#roomCode");
+const roomBadge = document.querySelector(".room-badge");
 const syncStatus = document.querySelector("#syncStatus");
 const voterNameInput = document.querySelector("#voterName");
 const shareLinkInput = document.querySelector("#shareLink");
@@ -72,7 +73,7 @@ copyLinkButton.addEventListener("click", async () => {
 });
 
 newRoomButton.addEventListener("click", () => {
-  const nextRoom = `tisch-${Math.random().toString(36).slice(2, 7)}`;
+  const nextRoom = `gurke-${Math.random().toString(36).slice(2, 7)}`;
   const url = new URL(window.location.href);
   url.searchParams.set("room", nextRoom);
   window.location.href = url.toString();
@@ -137,6 +138,7 @@ function render() {
   const filteredDishes = getFilteredDishes();
   const selectedIds = getSelectedIds();
 
+  updateCurrentVoterColor();
   voteCounter.textContent = selectedIds.length;
   menuHeading.textContent = `${filteredDishes.length} von ${allDishes.length} Gerichten`;
 
@@ -327,6 +329,11 @@ function getInitials(name) {
     .toUpperCase();
 }
 
+function updateCurrentVoterColor() {
+  const voterName = state.voterName.trim();
+  roomBadge.style.setProperty("--current-voter-color", voterName ? getVoterColor(voterName) : "#94e2d8");
+}
+
 async function initializeSharedRoom() {
   if (!window.supabase?.createClient) {
     setSyncStatus("Lokal");
@@ -401,8 +408,8 @@ function applyRemoteVotes(remoteVotes) {
 
 function getRoomId() {
   const params = new URLSearchParams(window.location.search);
-  const raw = params.get("room") || window.location.hash.replace("#", "") || "tischwahl";
-  return raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, "").slice(0, 32) || "tischwahl";
+  const raw = params.get("room") || window.location.hash.replace("#", "") || "gurkensalat";
+  return raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, "").slice(0, 32) || "gurkensalat";
 }
 
 function getShareUrl() {
