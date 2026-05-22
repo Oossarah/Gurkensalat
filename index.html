@@ -20,7 +20,13 @@
         </div>
       </header>
 
-      <section class="share-panel" aria-label="Abstimmung teilen">
+      <nav class="sticky-nav" aria-label="Schnellnavigation">
+        <a href="#menuSection">Speisekarte</a>
+        <a href="#resultsSection">Ergebnisse</a>
+        <a href="#shareSection">Teilen</a>
+      </nav>
+
+      <section id="shareSection" class="share-panel" aria-label="Abstimmung teilen">
         <label class="name-field">
           <span>Dein Name</span>
           <input id="voterName" type="text" autocomplete="name" placeholder="z. B. Sarah" />
@@ -57,7 +63,7 @@
       </section>
 
       <section class="content-grid">
-        <section class="menu-panel" aria-label="Speisekarte">
+        <section id="menuSection" class="menu-panel" aria-label="Speisekarte">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Speisekarte</p>
@@ -68,7 +74,7 @@
           <div id="menuList" class="menu-list"></div>
         </section>
 
-        <aside class="results-panel" aria-label="Ergebnis">
+        <aside id="resultsSection" class="results-panel" aria-label="Ergebnis">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Live Ergebnis</p>

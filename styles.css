@@ -15,6 +15,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -109,6 +113,47 @@ h2 {
 
 .room-badge small {
   color: #94e2d8;
+}
+
+.sticky-nav {
+  position: sticky;
+  top: 8px;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px;
+  border: 1px solid rgba(222, 215, 201, 0.94);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.sticky-nav a {
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  border-radius: 8px;
+  background: #ece7dc;
+  color: var(--ink);
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+
+.sticky-nav a:hover,
+.sticky-nav a:focus-visible {
+  background: var(--dark);
+  color: white;
+  outline: none;
+}
+
+#shareSection,
+#menuSection,
+#resultsSection {
+  scroll-margin-top: 86px;
 }
 
 .share-panel,
@@ -283,10 +328,74 @@ select:focus {
   text-align: right;
 }
 
-.dish-action span {
+.voter-summary {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.voter-summary span {
   color: var(--muted);
   font-size: 0.8rem;
   font-weight: 800;
+}
+
+.voter-markers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+  min-height: 24px;
+}
+
+.voter-markers.empty {
+  min-height: 0;
+}
+
+.voter-dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--voter-color);
+  color: white;
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.voter-markers.with-names {
+  justify-content: flex-start;
+  margin-top: 9px;
+}
+
+.voter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  border-radius: 999px;
+  background: #f0eee8;
+  color: var(--ink);
+  padding: 3px 8px 3px 3px;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.voter-pill i {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--voter-color);
+  color: white;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 950;
+  line-height: 1;
 }
 
 .vote-button {
@@ -339,6 +448,13 @@ select:focus {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+}
+
+.result-meta span {
+  color: var(--gold);
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  font-weight: 950;
 }
 
 .result-row small,
@@ -426,5 +542,11 @@ select:focus {
 
   .dish-action {
     text-align: left;
+  }
+
+  .voter-summary,
+  .voter-markers {
+    justify-items: start;
+    justify-content: flex-start;
   }
 }

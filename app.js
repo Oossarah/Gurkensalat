@@ -2,6 +2,7 @@ const supabaseUrl = "https://saekkjrstziirzyztkih.supabase.co";
 const supabaseKey = "sb_publishable_ko5UmpkF6RrGrnOOlzDVYg_c1E4vkZO";
 const roomTable = "tischwahl_rooms";
 const maxVotes = 8;
+const voterColors = ["#0f766e", "#b7791f", "#c2410c", "#7c3aed", "#2563eb", "#be123c", "#15803d", "#a21caf", "#0369a1", "#ca8a04"];
 const roomId = getRoomId();
 const storageKey = `tischwahl-sichuan-v1-${roomId}`;
 const menuSections = window.THE_SICHUAN_MENU ?? [];
@@ -127,7 +128,7 @@ function buildVotes(savedVotes = {}) {
   return Object.fromEntries(
     allDishes.map((dish) => [
       dish.id,
-      Array.isArray(savedVotes?.[dish.id]) ? savedVotes[dish.id] : [],
+      normalizeVoters(savedVotes?.[dish.id]),
     ]),
   );
 }
@@ -157,7 +158,7 @@ function getFilteredDishes() {
   const voterName = state.voterName.trim();
 
   return allDishes.filter((dish) => {
-    const voters = state.votes[dish.id] ?? [];
+    const voters = normalizeVoters(state.votes[dish.id]);
     const selected = voterName && voters.includes(voterName);
     const haystack = normalize(`${dish.name} ${dish.description} ${dish.section} ${dish.labels.join(" ")}`);
 
@@ -171,7 +172,7 @@ function getFilteredDishes() {
 
 function renderDishCard(dish) {
   const voterName = state.voterName.trim();
-  const voters = state.votes[dish.id] ?? [];
+  const voters = normalizeVoters(state.votes[dish.id]);
   const selected = voterName && voters.includes(voterName);
   const labels = [dish.section, ...dish.labels].slice(0, 4);
 
@@ -186,7 +187,10 @@ function renderDishCard(dish) {
         <div class="tags">${labels.map((label) => `<span>${escapeHtml(label)}</span>`).join("")}</div>
       </div>
       <div class="dish-action">
-        <span>${voters.length} Stimme${voters.length === 1 ? "" : "n"}</span>
+        <div class="voter-summary">
+          <span>${formatPersonCount(voters.length)}</span>
+          ${renderVoterMarkers(voters, false)}
+        </div>
         <button class="vote-button" type="button" data-dish="${escapeHtml(dish.id)}">
           ${selected ? "Gewählt" : "Wählen"}
         </button>
@@ -197,7 +201,7 @@ function renderDishCard(dish) {
 
 function renderResults() {
   const ranked = allDishes
-    .map((dish) => ({ ...dish, count: (state.votes[dish.id] ?? []).length }))
+    .map((dish) => ({ ...dish, count: normalizeVoters(state.votes[dish.id]).length }))
     .filter((dish) => dish.count > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
@@ -234,14 +238,14 @@ function renderResultGroup(group) {
 }
 
 function renderResultRow(dish) {
-  const voters = state.votes[dish.id] ?? [];
+  const voters = normalizeVoters(state.votes[dish.id]);
   return `
     <div class="result-row">
       <div class="result-meta">
         <strong>${escapeHtml(dish.name)}</strong>
-        <span>${dish.count}</span>
+        <span>${formatPersonCount(voters.length)}</span>
       </div>
-      <small>${escapeHtml(voters.join(", "))}</small>
+      ${renderVoterMarkers(voters, true)}
     </div>
   `;
 }
@@ -254,7 +258,7 @@ function toggleVote(dishId) {
     return;
   }
 
-  const votes = state.votes[dishId] ?? [];
+  const votes = normalizeVoters(state.votes[dishId]);
   const selected = votes.includes(voterName);
 
   if (selected) {
@@ -275,7 +279,52 @@ function toggleVote(dishId) {
 function getSelectedIds() {
   const voterName = state.voterName.trim();
   if (!voterName) return [];
-  return allDishes.filter((dish) => (state.votes[dish.id] ?? []).includes(voterName)).map((dish) => dish.id);
+  return allDishes.filter((dish) => normalizeVoters(state.votes[dish.id]).includes(voterName)).map((dish) => dish.id);
+}
+
+function normalizeVoters(voters = []) {
+  if (!Array.isArray(voters)) return [];
+  return [...new Set(voters.map((name) => String(name).trim()).filter(Boolean))];
+}
+
+function formatPersonCount(count) {
+  return `${count} Person${count === 1 ? "" : "en"}`;
+}
+
+function renderVoterMarkers(voters, showNames) {
+  const cleanVoters = normalizeVoters(voters);
+  if (!cleanVoters.length) return `<div class="voter-markers empty" aria-label="Noch niemand gewählt"></div>`;
+
+  return `
+    <div class="voter-markers ${showNames ? "with-names" : ""}" aria-label="${escapeHtml(cleanVoters.join(", "))}">
+      ${cleanVoters
+        .map((name) => {
+          const color = getVoterColor(name);
+          const initials = getInitials(name);
+          return showNames
+            ? `<span class="voter-pill" style="--voter-color: ${color};"><i>${escapeHtml(initials)}</i>${escapeHtml(name)}</span>`
+            : `<i class="voter-dot" style="--voter-color: ${color};" title="${escapeHtml(name)}">${escapeHtml(initials)}</i>`;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function getVoterColor(name) {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash * 31 + name.charCodeAt(index)) >>> 0;
+  }
+  return voterColors[hash % voterColors.length];
+}
+
+function getInitials(name) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 async function initializeSharedRoom() {
