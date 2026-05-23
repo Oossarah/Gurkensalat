@@ -4,23 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gurkensalat - The Sichuan</title>
-    <link rel="stylesheet" href="./styles.css?v=8" />
+    <link rel="stylesheet" href="./styles.css?v=32" />
   </head>
   <body>
     <main class="app-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">The Sichuan</p>
-          <h1>Gurkensalat</h1>
-        </div>
-        <div class="room-badge" aria-label="Abstimmungsraum">
-          <label class="badge-name-field">
-            <span>Dein Name</span>
-            <input id="voterName" type="text" autocomplete="name" placeholder="z. B. Sarah" />
+      <section id="welcomePanel" class="welcome-panel" aria-label="Name eintragen">
+        <form id="welcomeForm" class="welcome-form">
+          <label>
+            <span>Username festlegen</span>
+            <input id="welcomeName" type="text" autocomplete="username" placeholder="z. B. dimsumlord3" />
           </label>
-          <small><span id="roomCode">gurkensalat</span> · <span id="syncStatus">Lokal</span></small>
-        </div>
-      </header>
+          <button class="secondary-button" type="submit">Loslegen</button>
+        </form>
+      </section>
 
       <nav class="sticky-nav" aria-label="Schnellnavigation">
         <a href="#menuSection">Speisekarte</a>
@@ -59,7 +55,7 @@
               <h2 id="menuHeading">177 Gerichte</h2>
             </div>
           </div>
-          <div id="menuList" class="menu-list"></div>
+          <div id="menuList" class="menu-groups"></div>
         </section>
 
         <aside id="resultsSection" class="results-panel" aria-label="Ergebnis">
@@ -86,9 +82,18 @@
         </div>
         <div class="settings-grid">
           <label class="share-field">
+            <span>Username festlegen</span>
+            <input id="voterName" type="text" autocomplete="username" placeholder="z. B. dimsumlord3" />
+          </label>
+          <label class="share-field">
             <span>Link für die Gruppe</span>
             <input id="shareLink" type="text" readonly />
           </label>
+          <div class="room-status" aria-label="Raum und Verbindung">
+            <span id="roomCode">gurkensalat</span>
+            <small id="syncStatus">Lokal</small>
+            <small id="syncDetail">Noch nicht verbunden</small>
+          </div>
           <button id="copyLinkButton" class="secondary-button" type="button">Link kopieren</button>
           <button id="newRoomButton" class="secondary-button" type="button">Neuer Raum</button>
           <button id="clearMyVotesButton" class="secondary-button" type="button">Meine Auswahl leeren</button>
@@ -99,7 +104,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./menu-data.js?v=8"></script>
-    <script src="./app.js?v=8"></script>
+    <script src="./menu-data.js?v=32"></script>
+    <script src="./app.js?v=32"></script>
   </body>
 </html>

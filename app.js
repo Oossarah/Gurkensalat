@@ -1,7 +1,6 @@
 const supabaseUrl = "https://saekkjrstziirzyztkih.supabase.co";
 const supabaseKey = "sb_publishable_ko5UmpkF6RrGrnOOlzDVYg_c1E4vkZO";
 const roomTable = "tischwahl_rooms";
-const maxVotes = 8;
 const voterColors = ["#0f766e", "#b7791f", "#c2410c", "#7c3aed", "#2563eb", "#be123c", "#15803d", "#a21caf", "#0369a1", "#ca8a04"];
 const roomId = getRoomId();
 const storageKey = `tischwahl-sichuan-v1-${roomId}`;
@@ -16,9 +15,11 @@ let saveRemoteTimer = null;
 let toastTimer = null;
 
 const roomCode = document.querySelector("#roomCode");
-const roomBadge = document.querySelector(".room-badge");
 const syncStatus = document.querySelector("#syncStatus");
+const syncDetail = document.querySelector("#syncDetail");
 const voterNameInput = document.querySelector("#voterName");
+const welcomeForm = document.querySelector("#welcomeForm");
+const welcomeNameInput = document.querySelector("#welcomeName");
 const shareLinkInput = document.querySelector("#shareLink");
 const copyLinkButton = document.querySelector("#copyLinkButton");
 const newRoomButton = document.querySelector("#newRoomButton");
@@ -37,6 +38,7 @@ const toast = document.querySelector("#toast");
 roomCode.textContent = roomId;
 shareLinkInput.value = getShareUrl();
 voterNameInput.value = state.voterName;
+welcomeNameInput.value = state.voterName;
 
 sectionFilter.innerHTML = [
   `<option value="all">Alle Kategorien</option>`,
@@ -47,6 +49,7 @@ voterNameInput.addEventListener("input", () => {
   const previousName = state.voterName.trim();
   const nextName = voterNameInput.value.trim();
   state.voterName = voterNameInput.value;
+  welcomeNameInput.value = state.voterName;
 
   if (previousName && nextName && previousName !== nextName) {
     Object.keys(state.votes).forEach((dishId) => {
@@ -56,6 +59,24 @@ voterNameInput.addEventListener("input", () => {
 
   saveState();
   render();
+});
+
+welcomeNameInput.addEventListener("input", () => {
+  voterNameInput.value = welcomeNameInput.value;
+});
+
+welcomeForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const nextName = welcomeNameInput.value.trim();
+  if (!nextName) {
+    welcomeNameInput.focus();
+    showToast("Bitte zuerst deinen Namen eintragen.");
+    return;
+  }
+
+  voterNameInput.value = welcomeNameInput.value;
+  voterNameInput.dispatchEvent(new Event("input"));
+  document.querySelector("#menuSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 searchInput.addEventListener("input", render);
@@ -138,12 +159,13 @@ function render() {
   const filteredDishes = getFilteredDishes();
   const selectedIds = getSelectedIds();
 
+  updateNameGate();
   updateCurrentVoterColor();
   voteCounter.textContent = selectedIds.length;
   menuHeading.textContent = `${filteredDishes.length} von ${allDishes.length} Gerichten`;
 
   menuList.innerHTML = filteredDishes.length
-    ? filteredDishes.map(renderDishCard).join("")
+    ? renderMenuGroups(filteredDishes)
     : `<div class="empty-state">Keine Gerichte gefunden.</div>`;
 
   menuList.querySelectorAll("[data-dish]").forEach((button) => {
@@ -151,6 +173,35 @@ function render() {
   });
 
   renderResults();
+}
+
+function renderMenuGroups(filteredDishes) {
+  const grouped = menuSections
+    .map((section) => ({
+      section,
+      dishes: filteredDishes.filter((dish) => dish.sectionId === section.id),
+    }))
+    .filter((group) => group.dishes.length > 0);
+
+  const hasActiveFilter = Boolean(searchInput.value.trim()) || sectionFilter.value !== "all" || viewFilter.value !== "all";
+
+  return grouped
+    .map((group, index) => renderMenuGroup(group, hasActiveFilter || index === 0))
+    .join("");
+}
+
+function renderMenuGroup(group, open) {
+  return `
+    <details class="menu-group" ${open ? "open" : ""}>
+      <summary>
+        <span>${escapeHtml(group.section.name)}</span>
+        <small>${group.dishes.length}</small>
+      </summary>
+      <div class="menu-list">
+        ${group.dishes.map(renderDishCard).join("")}
+      </div>
+    </details>
+  `;
 }
 
 function getFilteredDishes() {
@@ -177,12 +228,13 @@ function renderDishCard(dish) {
   const voters = normalizeVoters(state.votes[dish.id]);
   const selected = voterName && voters.includes(voterName);
   const labels = [dish.section, ...dish.labels].slice(0, 4);
+  const dishName = getDisplayDishName(dish);
 
   return `
     <article class="dish-card ${selected ? "selected" : ""}">
       <div class="dish-main">
         <div class="dish-top">
-          <h3>${escapeHtml(dish.name)}</h3>
+          <h3>${escapeHtml(dishName)}</h3>
           <strong>€ ${escapeHtml(formatPrice(dish.price))}</strong>
         </div>
         <p>${escapeHtml(dish.description || "The Sichuan Speisekarte")}</p>
@@ -219,7 +271,7 @@ function renderResults() {
     : `<div class="empty-state">Noch keine Stimmen.</div>`;
 
   orderSummary.textContent = ranked.length
-    ? ranked.slice(0, 4).map((dish) => `${dish.name} (${dish.count})`).join(" · ")
+    ? ranked.slice(0, 4).map((dish) => `${getDisplayDishName(dish)} (${dish.count})`).join(" · ")
     : "Noch offen";
 }
 
@@ -244,10 +296,9 @@ function renderResultRow(dish) {
   return `
     <div class="result-row">
       <div class="result-meta">
-        <strong>${escapeHtml(dish.name)}</strong>
+        <strong>${escapeHtml(getDisplayDishName(dish))}</strong>
         <span>${formatPersonCount(voters.length)}</span>
       </div>
-      ${renderVoterMarkers(voters, true)}
     </div>
   `;
 }
@@ -266,11 +317,6 @@ function toggleVote(dishId) {
   if (selected) {
     state.votes[dishId] = votes.filter((name) => name !== voterName);
   } else {
-    const selectedCount = getSelectedIds().length;
-    if (selectedCount >= maxVotes) {
-      showToast(`Du kannst maximal ${maxVotes} Gerichte wählen.`);
-      return;
-    }
     state.votes[dishId] = [...votes, voterName];
   }
 
@@ -287,6 +333,18 @@ function getSelectedIds() {
 function normalizeVoters(voters = []) {
   if (!Array.isArray(voters)) return [];
   return [...new Set(voters.map((name) => String(name).trim()).filter(Boolean))];
+}
+
+function getDisplayDishName(dish) {
+  return stripChineseCharacters(dish.name) || stripChineseCharacters(dish.description) || "Gericht";
+}
+
+function stripChineseCharacters(value) {
+  return String(value)
+    .replace(/[\u3400-\u9fff\uf900-\ufaff]/g, "")
+    .replace(/[（）]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatPersonCount(count) {
@@ -331,17 +389,21 @@ function getInitials(name) {
 
 function updateCurrentVoterColor() {
   const voterName = state.voterName.trim();
-  roomBadge.style.setProperty("--current-voter-color", voterName ? getVoterColor(voterName) : "#94e2d8");
+  document.documentElement.style.setProperty("--current-voter-color", voterName ? getVoterColor(voterName) : "#efc5bf");
+}
+
+function updateNameGate() {
+  document.body.classList.toggle("has-voter-name", Boolean(state.voterName.trim()));
 }
 
 async function initializeSharedRoom() {
   if (!window.supabase?.createClient) {
-    setSyncStatus("Lokal");
+    setSyncStatus("Lokal", "Supabase-Bibliothek nicht geladen");
     return;
   }
 
   supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-  setSyncStatus("Verbinde");
+  setSyncStatus("Verbinde", "Online-Abstimmung wird geprüft");
 
   try {
     const { data, error } = await supabaseClient
@@ -351,16 +413,17 @@ async function initializeSharedRoom() {
       .maybeSingle();
     if (error) throw error;
 
-    if (data?.data?.votes) applyRemoteVotes(data.data.votes);
+    if (data?.data?.votes) applyRemoteState(data.data);
     else await saveRemoteState();
 
     remoteReady = true;
-    setSyncStatus("Online");
+    setSyncStatus("Online", "Verbunden");
     subscribeToRoom();
   } catch (error) {
     console.error(error);
-    setSyncStatus("Lokal");
-    showToast("Online-Abstimmung nicht erreichbar.");
+    const message = getSupabaseErrorMessage(error);
+    setSyncStatus("Lokal", message);
+    showToast(message);
   }
 }
 
@@ -371,11 +434,11 @@ function subscribeToRoom() {
       "postgres_changes",
       { event: "*", schema: "public", table: roomTable, filter: `room_id=eq.${roomId}` },
       (payload) => {
-        if (payload.new?.data?.votes) applyRemoteVotes(payload.new.data.votes);
+        if (payload.new?.data?.votes) applyRemoteState(payload.new.data);
       },
     )
     .subscribe((status) => {
-      if (status === "SUBSCRIBED") setSyncStatus("Live");
+      if (status === "SUBSCRIBED") setSyncStatus("Live", "Änderungen werden synchronisiert");
     });
 }
 
@@ -395,12 +458,17 @@ async function saveRemoteState() {
     },
     updated_at: new Date().toISOString(),
   });
-  if (error) setSyncStatus("Lokal");
+  if (error) {
+    console.error(error);
+    const message = getSupabaseErrorMessage(error);
+    setSyncStatus("Lokal", message);
+    showToast(message);
+  }
 }
 
-function applyRemoteVotes(remoteVotes) {
+function applyRemoteState(remoteState) {
   applyingRemoteState = true;
-  state.votes = buildVotes(remoteVotes);
+  state.votes = buildVotes(remoteState.votes);
   localStorage.setItem(storageKey, JSON.stringify(state));
   render();
   applyingRemoteState = false;
@@ -419,8 +487,9 @@ function getShareUrl() {
   return url.toString();
 }
 
-function setSyncStatus(label) {
+function setSyncStatus(label, detail = "") {
   syncStatus.textContent = label;
+  syncDetail.textContent = detail;
 }
 
 function normalize(value) {
@@ -445,6 +514,20 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function getSupabaseErrorMessage(error) {
+  const message = String(error?.message ?? "");
+  if (message.includes(roomTable) || message.includes("schema cache")) {
+    return "Online-Tabelle fehlt. Bitte Supabase SQL erneut ausführen.";
+  }
+  if (message.toLowerCase().includes("permission") || message.includes("row-level security") || message.includes("RLS")) {
+    return "Supabase-Rechte fehlen. Bitte RLS-Policies prüfen.";
+  }
+  if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("network")) {
+    return "Keine Verbindung zu Supabase. Internet/Key prüfen.";
+  }
+  return "Online-Abstimmung nicht erreichbar. Supabase prüfen.";
 }
 
 render();
