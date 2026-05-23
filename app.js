@@ -1,7 +1,8 @@
 const supabaseUrl = "https://saekkjrstziirzyztkih.supabase.co";
 const supabaseKey = "sb_publishable_ko5UmpkF6RrGrnOOlzDVYg_c1E4vkZO";
 const roomTable = "tischwahl_rooms";
-const voterColors = ["#0f766e", "#b7791f", "#c2410c", "#7c3aed", "#2563eb", "#be123c", "#15803d", "#a21caf", "#0369a1", "#ca8a04"];
+const maxVotes = 8;
+const voterColors = ["#fff12b", "#e8f3e6", "#9c93b5", "#ff4f2e", "#9b9200", "#f0f0ef", "#c8c0dc", "#d7e5d3", "#ff7a5f", "#c9bd00"];
 const roomId = getRoomId();
 const storageKey = `tischwahl-sichuan-v1-${roomId}`;
 const menuSections = window.THE_SICHUAN_MENU ?? [];
@@ -18,8 +19,6 @@ const roomCode = document.querySelector("#roomCode");
 const syncStatus = document.querySelector("#syncStatus");
 const syncDetail = document.querySelector("#syncDetail");
 const voterNameInput = document.querySelector("#voterName");
-const welcomeForm = document.querySelector("#welcomeForm");
-const welcomeNameInput = document.querySelector("#welcomeName");
 const shareLinkInput = document.querySelector("#shareLink");
 const copyLinkButton = document.querySelector("#copyLinkButton");
 const newRoomButton = document.querySelector("#newRoomButton");
@@ -38,7 +37,6 @@ const toast = document.querySelector("#toast");
 roomCode.textContent = roomId;
 shareLinkInput.value = getShareUrl();
 voterNameInput.value = state.voterName;
-welcomeNameInput.value = state.voterName;
 
 sectionFilter.innerHTML = [
   `<option value="all">Alle Kategorien</option>`,
@@ -49,7 +47,6 @@ voterNameInput.addEventListener("input", () => {
   const previousName = state.voterName.trim();
   const nextName = voterNameInput.value.trim();
   state.voterName = voterNameInput.value;
-  welcomeNameInput.value = state.voterName;
 
   if (previousName && nextName && previousName !== nextName) {
     Object.keys(state.votes).forEach((dishId) => {
@@ -59,24 +56,6 @@ voterNameInput.addEventListener("input", () => {
 
   saveState();
   render();
-});
-
-welcomeNameInput.addEventListener("input", () => {
-  voterNameInput.value = welcomeNameInput.value;
-});
-
-welcomeForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const nextName = welcomeNameInput.value.trim();
-  if (!nextName) {
-    welcomeNameInput.focus();
-    showToast("Bitte zuerst deinen Namen eintragen.");
-    return;
-  }
-
-  voterNameInput.value = welcomeNameInput.value;
-  voterNameInput.dispatchEvent(new Event("input"));
-  document.querySelector("#menuSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 searchInput.addEventListener("input", render);
@@ -159,7 +138,6 @@ function render() {
   const filteredDishes = getFilteredDishes();
   const selectedIds = getSelectedIds();
 
-  updateNameGate();
   updateCurrentVoterColor();
   voteCounter.textContent = selectedIds.length;
   menuHeading.textContent = `${filteredDishes.length} von ${allDishes.length} Gerichten`;
@@ -299,6 +277,7 @@ function renderResultRow(dish) {
         <strong>${escapeHtml(getDisplayDishName(dish))}</strong>
         <span>${formatPersonCount(voters.length)}</span>
       </div>
+      ${renderVoterMarkers(voters, true)}
     </div>
   `;
 }
@@ -317,6 +296,11 @@ function toggleVote(dishId) {
   if (selected) {
     state.votes[dishId] = votes.filter((name) => name !== voterName);
   } else {
+    const selectedCount = getSelectedIds().length;
+    if (selectedCount >= maxVotes) {
+      showToast(`Du kannst maximal ${maxVotes} Gerichte wählen.`);
+      return;
+    }
     state.votes[dishId] = [...votes, voterName];
   }
 
@@ -390,10 +374,6 @@ function getInitials(name) {
 function updateCurrentVoterColor() {
   const voterName = state.voterName.trim();
   document.documentElement.style.setProperty("--current-voter-color", voterName ? getVoterColor(voterName) : "#efc5bf");
-}
-
-function updateNameGate() {
-  document.body.classList.toggle("has-voter-name", Boolean(state.voterName.trim()));
 }
 
 async function initializeSharedRoom() {
@@ -489,7 +469,7 @@ function getShareUrl() {
 
 function setSyncStatus(label, detail = "") {
   syncStatus.textContent = label;
-  syncDetail.textContent = detail;
+  if (syncDetail) syncDetail.textContent = detail;
 }
 
 function normalize(value) {
