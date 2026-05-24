@@ -168,7 +168,17 @@ function render() {
   menuList.querySelectorAll("[data-dish]").forEach((button) => {
     button.addEventListener("click", () => toggleVote(button.dataset.dish));
   });
+  menuList.querySelectorAll(".menu-group").forEach((group) => {
+    group.addEventListener("toggle", () => closeOtherMenuGroups(group));
+  });
   renderResults();
+}
+
+function closeOtherMenuGroups(activeGroup) {
+  if (!activeGroup.open) return;
+  menuList.querySelectorAll(".menu-group[open]").forEach((group) => {
+    if (group !== activeGroup) group.open = false;
+  });
 }
 
 function getOpenMenuSectionIds() {
@@ -285,13 +295,13 @@ function renderResults() {
 }
 
 function renderResultGroup(group) {
-  const totalQuantity = group.dishes.reduce((sum, dish) => sum + dish.quantity, 0);
+  const totalPeople = group.dishes.reduce((sum, dish) => sum + dish.count, 0);
 
   return `
     <section class="result-group">
       <div class="result-group-heading">
         <strong>${escapeHtml(group.section.name)}</strong>
-        <span>${totalQuantity}x</span>
+        <span>${formatPersonCount(totalPeople)}</span>
       </div>
       <div class="result-group-list">
         ${group.dishes.map(renderResultRow).join("")}
@@ -306,7 +316,7 @@ function renderResultRow(dish) {
     <div class="result-row">
       <div class="result-meta">
         <strong>${escapeHtml(getDisplayDishName(dish))}</strong>
-        <span>${dish.quantity} Portion${dish.quantity === 1 ? "" : "en"} · ${formatPersonCount(voters.length)}</span>
+        <span>${formatPersonCount(voters.length)}</span>
       </div>
     </div>
   `;
