@@ -115,7 +115,7 @@ h2 {
   top: max(10px, env(safe-area-inset-top));
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 64px;
   gap: 12px;
   margin: 12px 0;
   padding: 0;
@@ -147,6 +147,12 @@ h2 {
   outline: none;
 }
 
+.sticky-nav .admin-nav-link {
+  width: 64px;
+  padding: 0;
+  font-size: var(--text-md);
+}
+
 #menuSection,
 #resultsSection,
 #settingsSection {
@@ -170,7 +176,33 @@ h2 {
 }
 
 .user-panel {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.user-panel.confirmed {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.user-panel.confirmed input {
+  border-color: var(--line);
+  background: var(--dark);
+  color: white;
+}
+
+.user-panel.confirmed input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.user-panel.confirmed #nameGoButton {
+  border-color: var(--line);
+  background: #f4f4f4;
+  color: var(--ink);
+}
+
+#nameGoButton {
+  min-width: 88px;
 }
 
 .room-status {
@@ -308,7 +340,7 @@ select:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 58px;
+  min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--category-bg);
@@ -325,11 +357,11 @@ select:focus {
   content: "+";
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   line-height: 1;
 }
 
@@ -342,7 +374,7 @@ select:focus {
 }
 
 .menu-group summary span {
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
@@ -629,7 +661,7 @@ select:focus {
   }
 
   .sticky-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 56px;
     gap: 6px;
     margin: 8px 0;
     padding: 0;
@@ -639,6 +671,12 @@ select:focus {
     min-height: 40px;
     padding: 0 6px;
     font-size: var(--text-xs);
+  }
+
+  .sticky-nav .admin-nav-link {
+    width: 56px;
+    padding: 0;
+    font-size: var(--text-sm);
   }
 
   .dish-card {

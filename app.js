@@ -18,7 +18,9 @@ let toastTimer = null;
 const roomCode = document.querySelector("#roomCode");
 const syncStatus = document.querySelector("#syncStatus");
 const syncDetail = document.querySelector("#syncDetail");
+const userPanel = document.querySelector(".user-panel");
 const voterNameInput = document.querySelector("#voterName");
+const nameGoButton = document.querySelector("#nameGoButton");
 const shareLinkInput = document.querySelector("#shareLink");
 const copyLinkButton = document.querySelector("#copyLinkButton");
 const newRoomButton = document.querySelector("#newRoomButton");
@@ -58,6 +60,7 @@ voterNameInput.addEventListener("input", () => {
     });
   }
 
+  userPanel.classList.remove("confirmed");
   saveState();
   render();
 });
@@ -65,6 +68,23 @@ voterNameInput.addEventListener("input", () => {
 searchInput.addEventListener("input", render);
 sectionFilter.addEventListener("change", render);
 viewFilter.addEventListener("change", render);
+
+nameGoButton.addEventListener("click", submitVoterName);
+voterNameInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  submitVoterName();
+});
+
+function submitVoterName() {
+  if (!state.voterName.trim()) {
+    voterNameInput.focus();
+    showToast("Bitte Username eingeben.");
+    return;
+  }
+  userPanel.classList.add("confirmed");
+  document.querySelector("#menuSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 copyLinkButton.addEventListener("click", async () => {
   try {
@@ -168,17 +188,38 @@ function render() {
   menuList.querySelectorAll("[data-dish]").forEach((button) => {
     button.addEventListener("click", () => toggleVote(button.dataset.dish));
   });
-  menuList.querySelectorAll(".menu-group").forEach((group) => {
-    group.addEventListener("toggle", () => closeOtherMenuGroups(group));
+  menuList.querySelectorAll(".menu-group summary").forEach((summary) => {
+    summary.addEventListener("click", handleMenuSummaryClick);
+    summary.addEventListener("keydown", handleMenuSummaryKeydown);
   });
   renderResults();
 }
 
-function closeOtherMenuGroups(activeGroup) {
-  if (!activeGroup.open) return;
-  menuList.querySelectorAll(".menu-group[open]").forEach((group) => {
-    if (group !== activeGroup) group.open = false;
+function handleMenuSummaryClick(event) {
+  event.preventDefault();
+  toggleMenuGroup(event.currentTarget.closest(".menu-group"));
+}
+
+function handleMenuSummaryKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  toggleMenuGroup(event.currentTarget.closest(".menu-group"));
+}
+
+function toggleMenuGroup(group) {
+  if (!group) return;
+
+  const summary = group.querySelector("summary");
+  const beforeTop = summary.getBoundingClientRect().top;
+  const willOpen = !group.open;
+
+  menuList.querySelectorAll(".menu-group[open]").forEach((openGroup) => {
+    if (openGroup !== group) openGroup.open = false;
   });
+  group.open = willOpen;
+
+  const afterTop = summary.getBoundingClientRect().top;
+  window.scrollBy(0, afterTop - beforeTop);
 }
 
 function getOpenMenuSectionIds() {
@@ -295,13 +336,13 @@ function renderResults() {
 }
 
 function renderResultGroup(group) {
-  const totalPeople = group.dishes.reduce((sum, dish) => sum + dish.count, 0);
+  const dishCount = group.dishes.length;
 
   return `
     <section class="result-group">
       <div class="result-group-heading">
         <strong>${escapeHtml(group.section.name)}</strong>
-        <span>${formatPersonCount(totalPeople)}</span>
+        <span>${dishCount} Gericht${dishCount === 1 ? "" : "e"}</span>
       </div>
       <div class="result-group-list">
         ${group.dishes.map(renderResultRow).join("")}

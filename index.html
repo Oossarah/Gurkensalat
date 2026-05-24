@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gurkensalat - The Sichuan</title>
-    <link rel="stylesheet" href="./styles.css?v=73" />
+    <link rel="stylesheet" href="./styles.css?v=86" />
   </head>
   <body>
     <main class="app-shell">
       <nav class="sticky-nav" aria-label="Schnellnavigation">
         <a href="#menuSection">Speisekarte</a>
         <a href="#resultsSection">Ergebnisse</a>
-        <a href="#settingsSection">Einstellungen</a>
+        <a class="admin-nav-link" href="#settingsSection" aria-label="Admin">⚙</a>
       </nav>
 
       <section class="user-panel" aria-label="Username">
@@ -19,6 +19,7 @@
           <span>Username festlegen</span>
           <input id="voterName" type="text" autocomplete="username" placeholder="z. B. dimsumlord3" />
         </label>
+        <button id="nameGoButton" class="secondary-button" type="button">go</button>
       </section>
 
       <section class="toolbar" aria-label="Menü filtern">
@@ -87,7 +88,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./menu-data.js?v=73"></script>
-    <script src="./app.js?v=73"></script>
+    <script src="./menu-data.js?v=86"></script>
+    <script src="./app.js?v=86"></script>
   </body>
 </html>
