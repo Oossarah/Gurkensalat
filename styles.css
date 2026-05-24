@@ -56,6 +56,7 @@ button {
 }
 
 .settings-panel,
+.user-panel,
 .toolbar,
 .results-panel {
   border: 1px solid var(--line);
@@ -152,6 +153,7 @@ h2 {
 }
 
 .settings-panel,
+.user-panel,
 .toolbar {
   display: grid;
   gap: 12px;
@@ -161,9 +163,13 @@ h2 {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: minmax(190px, 0.6fr) minmax(260px, 1fr) minmax(180px, auto) repeat(4, auto);
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, auto) repeat(4, auto);
   gap: 12px;
   align-items: end;
+}
+
+.user-panel {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .room-status {
@@ -185,7 +191,7 @@ h2 {
 }
 
 .toolbar {
-  grid-template-columns: minmax(240px, 1.3fr) minmax(180px, 0.65fr) minmax(160px, 0.55fr) 88px;
+  grid-template-columns: minmax(240px, 1.3fr) minmax(180px, 0.65fr) minmax(160px, 0.55fr);
   align-items: end;
 }
 
@@ -221,25 +227,6 @@ select:focus {
 
 .danger-button {
   background: var(--accent);
-}
-
-.selection-counter {
-  display: grid;
-  place-items: center;
-  min-height: 54px;
-  border-radius: 18px;
-  background: var(--dark);
-  color: white;
-}
-
-.selection-counter span {
-  font-size: var(--text-lg);
-  font-weight: 500;
-}
-
-.selection-counter small {
-  color: #b7c2c9;
-  font-weight: 500;
 }
 
 .content-grid {
@@ -279,9 +266,14 @@ select:focus {
 
 .menu-group {
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 999px;
   background: var(--surface);
+  color: var(--ink);
   overflow: hidden;
+}
+
+.menu-group[open] {
+  border-radius: 28px;
 }
 
 .menu-group:nth-child(5n + 1) {
@@ -342,7 +334,7 @@ select:focus {
 
 .menu-group summary small {
   margin-left: auto;
-  color: var(--muted);
+  color: var(--ink);
   font-weight: 500;
 }
 
@@ -361,6 +353,7 @@ select:focus {
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--gray-card);
+  color: var(--ink);
   padding: 20px;
   overflow: hidden;
 }
@@ -368,7 +361,6 @@ select:focus {
 .dish-card.selected {
   background: var(--dark);
   color: white;
-  box-shadow: inset 0 0 0 5px var(--accent);
 }
 
 .dish-top {
@@ -490,6 +482,11 @@ select:focus {
   color: var(--ink);
 }
 
+.vote-controls {
+  display: grid;
+  gap: 8px;
+}
+
 .results-list,
 .result-group,
 .result-group-list {
@@ -504,8 +501,8 @@ select:focus {
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--dark);
+  color: white;
   padding: 9px 11px;
   font-size: var(--text-base);
   font-weight: 500;
@@ -601,7 +598,7 @@ select:focus {
   }
 
   .sticky-nav {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     margin: 8px 0;
     padding: 0;
@@ -609,7 +606,7 @@ select:focus {
 
   .sticky-nav a {
     min-height: 40px;
-    padding: 0 12px;
+    padding: 0 6px;
     font-size: var(--text-xs);
   }
 

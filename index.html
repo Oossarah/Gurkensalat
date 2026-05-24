@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gurkensalat - The Sichuan</title>
-    <link rel="stylesheet" href="./styles.css?v=43" />
+    <link rel="stylesheet" href="./styles.css?v=56" />
   </head>
   <body>
     <main class="app-shell">
@@ -13,6 +13,13 @@
         <a href="#resultsSection">Ergebnisse</a>
         <a href="#settingsSection">Einstellungen</a>
       </nav>
+
+      <section class="user-panel" aria-label="Username">
+        <label class="share-field">
+          <span>Username festlegen</span>
+          <input id="voterName" type="text" autocomplete="username" placeholder="z. B. dimsumlord3" />
+        </label>
+      </section>
 
       <section class="toolbar" aria-label="Menü filtern">
         <label class="search-field">
@@ -31,20 +38,10 @@
             <option value="popular">Mit Stimmen</option>
           </select>
         </label>
-        <div class="selection-counter">
-          <span id="voteCounter">0</span>
-          <small>gewählt</small>
-        </div>
       </section>
 
       <section class="content-grid">
         <section id="menuSection" class="menu-panel" aria-label="Speisekarte">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Speisekarte</p>
-              <h2 id="menuHeading">177 Gerichte</h2>
-            </div>
-          </div>
           <div id="menuList" class="menu-groups"></div>
         </section>
 
@@ -72,10 +69,6 @@
         </div>
         <div class="settings-grid">
           <label class="share-field">
-            <span>Username festlegen</span>
-            <input id="voterName" type="text" autocomplete="username" placeholder="z. B. dimsumlord3" />
-          </label>
-          <label class="share-field">
             <span>Link für die Gruppe</span>
             <input id="shareLink" type="text" readonly />
           </label>
@@ -94,7 +87,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./menu-data.js?v=43"></script>
-    <script src="./app.js?v=43"></script>
+    <script src="./menu-data.js?v=56"></script>
+    <script src="./app.js?v=56"></script>
   </body>
 </html>

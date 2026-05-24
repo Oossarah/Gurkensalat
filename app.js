@@ -1,7 +1,7 @@
 const supabaseUrl = "https://saekkjrstziirzyztkih.supabase.co";
 const supabaseKey = "sb_publishable_ko5UmpkF6RrGrnOOlzDVYg_c1E4vkZO";
 const roomTable = "tischwahl_rooms";
-const maxVotes = 8;
+const maxQuantity = 20;
 const voterColors = ["#fff12b", "#e8f3e6", "#9c93b5", "#ff4f2e", "#9b9200", "#f0f0ef", "#c8c0dc", "#d7e5d3", "#ff7a5f", "#c9bd00"];
 const roomId = getRoomId();
 const storageKey = `tischwahl-sichuan-v1-${roomId}`;
@@ -25,8 +25,6 @@ const newRoomButton = document.querySelector("#newRoomButton");
 const searchInput = document.querySelector("#searchInput");
 const sectionFilter = document.querySelector("#sectionFilter");
 const viewFilter = document.querySelector("#viewFilter");
-const voteCounter = document.querySelector("#voteCounter");
-const menuHeading = document.querySelector("#menuHeading");
 const menuList = document.querySelector("#menuList");
 const resultsList = document.querySelector("#resultsList");
 const orderSummary = document.querySelector("#orderSummary");
@@ -51,6 +49,12 @@ voterNameInput.addEventListener("input", () => {
   if (previousName && nextName && previousName !== nextName) {
     Object.keys(state.votes).forEach((dishId) => {
       state.votes[dishId] = state.votes[dishId].map((name) => (name === previousName ? nextName : name));
+    });
+    Object.keys(state.quantities).forEach((dishId) => {
+      if (state.quantities[dishId]?.[previousName]) {
+        state.quantities[dishId][nextName] = state.quantities[dishId][previousName];
+        delete state.quantities[dishId][previousName];
+      }
     });
   }
 
@@ -89,6 +93,7 @@ clearMyVotesButton.addEventListener("click", () => {
 
   allDishes.forEach((dish) => {
     state.votes[dish.id] = (state.votes[dish.id] ?? []).filter((name) => name !== voterName);
+    delete state.quantities[dish.id]?.[voterName];
   });
   saveState();
   render();
@@ -96,6 +101,7 @@ clearMyVotesButton.addEventListener("click", () => {
 
 resetButton.addEventListener("click", () => {
   state.votes = buildEmptyVotes();
+  state.quantities = buildEmptyQuantities();
   saveState();
   render();
   showToast("Alle Stimmen wurden zurückgesetzt.");
@@ -107,11 +113,13 @@ function loadState() {
     return {
       voterName: saved?.voterName ?? "",
       votes: buildVotes(saved?.votes),
+      quantities: buildQuantities(saved?.quantities, saved?.votes),
     };
   } catch {
     return {
       voterName: "",
       votes: buildEmptyVotes(),
+      quantities: buildEmptyQuantities(),
     };
   }
 }
@@ -125,6 +133,10 @@ function buildEmptyVotes() {
   return Object.fromEntries(allDishes.map((dish) => [dish.id, []]));
 }
 
+function buildEmptyQuantities() {
+  return Object.fromEntries(allDishes.map((dish) => [dish.id, {}]));
+}
+
 function buildVotes(savedVotes = {}) {
   return Object.fromEntries(
     allDishes.map((dish) => [
@@ -134,26 +146,38 @@ function buildVotes(savedVotes = {}) {
   );
 }
 
+function buildQuantities(savedQuantities = {}, savedVotes = {}) {
+  return Object.fromEntries(
+    allDishes.map((dish) => [
+      dish.id,
+      normalizeQuantities(savedQuantities?.[dish.id], savedVotes?.[dish.id]),
+    ]),
+  );
+}
+
 function render() {
   const filteredDishes = getFilteredDishes();
-  const selectedIds = getSelectedIds();
+  const openSectionIds = getOpenMenuSectionIds();
 
   updateCurrentVoterColor();
-  voteCounter.textContent = selectedIds.length;
-  menuHeading.textContent = `${filteredDishes.length} von ${allDishes.length} Gerichten`;
 
   menuList.innerHTML = filteredDishes.length
-    ? renderMenuGroups(filteredDishes)
+    ? renderMenuGroups(filteredDishes, openSectionIds)
     : `<div class="empty-state">Keine Gerichte gefunden.</div>`;
 
   menuList.querySelectorAll("[data-dish]").forEach((button) => {
     button.addEventListener("click", () => toggleVote(button.dataset.dish));
   });
-
   renderResults();
 }
 
-function renderMenuGroups(filteredDishes) {
+function getOpenMenuSectionIds() {
+  return [...menuList.querySelectorAll(".menu-group[open]")]
+    .map((group) => group.dataset.sectionId)
+    .filter(Boolean);
+}
+
+function renderMenuGroups(filteredDishes, openSectionIds = []) {
   const grouped = menuSections
     .map((section) => ({
       section,
@@ -162,15 +186,16 @@ function renderMenuGroups(filteredDishes) {
     .filter((group) => group.dishes.length > 0);
 
   const hasActiveFilter = Boolean(searchInput.value.trim()) || sectionFilter.value !== "all" || viewFilter.value !== "all";
+  const hasOpenSections = openSectionIds.length > 0;
 
   return grouped
-    .map((group, index) => renderMenuGroup(group, hasActiveFilter || index === 0))
+    .map((group, index) => renderMenuGroup(group, hasActiveFilter || openSectionIds.includes(group.section.id) || (!hasOpenSections && index === 0)))
     .join("");
 }
 
 function renderMenuGroup(group, open) {
   return `
-    <details class="menu-group" ${open ? "open" : ""}>
+    <details class="menu-group" data-section-id="${escapeHtml(group.section.id)}" ${open ? "open" : ""}>
       <summary>
         <span>${escapeHtml(group.section.name)}</span>
         <small>${group.dishes.length}</small>
@@ -223,9 +248,11 @@ function renderDishCard(dish) {
           <span>${formatPersonCount(voters.length)}</span>
           ${renderVoterMarkers(voters, false)}
         </div>
-        <button class="vote-button" type="button" data-dish="${escapeHtml(dish.id)}">
-          ${selected ? "Gewählt" : "Wählen"}
-        </button>
+        <div class="vote-controls">
+          <button class="vote-button" type="button" data-dish="${escapeHtml(dish.id)}">
+            ${selected ? "Gewählt" : "Wählen"}
+          </button>
+        </div>
       </div>
     </article>
   `;
@@ -233,9 +260,13 @@ function renderDishCard(dish) {
 
 function renderResults() {
   const ranked = allDishes
-    .map((dish) => ({ ...dish, count: normalizeVoters(state.votes[dish.id]).length }))
+    .map((dish) => ({
+      ...dish,
+      count: normalizeVoters(state.votes[dish.id]).length,
+      quantity: getDishTotalQuantity(dish.id),
+    }))
     .filter((dish) => dish.count > 0)
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    .sort((a, b) => b.quantity - a.quantity || b.count - a.count || a.name.localeCompare(b.name));
 
   const grouped = menuSections
     .map((section) => ({
@@ -249,18 +280,18 @@ function renderResults() {
     : `<div class="empty-state">Noch keine Stimmen.</div>`;
 
   orderSummary.textContent = ranked.length
-    ? ranked.slice(0, 4).map((dish) => `${getDisplayDishName(dish)} (${dish.count})`).join(" · ")
+    ? ranked.slice(0, 4).map((dish) => `${getDisplayDishName(dish)} (${dish.quantity}x)`).join(" · ")
     : "Noch offen";
 }
 
 function renderResultGroup(group) {
-  const totalVotes = group.dishes.reduce((sum, dish) => sum + dish.count, 0);
+  const totalQuantity = group.dishes.reduce((sum, dish) => sum + dish.quantity, 0);
 
   return `
     <section class="result-group">
       <div class="result-group-heading">
         <strong>${escapeHtml(group.section.name)}</strong>
-        <span>${totalVotes}</span>
+        <span>${totalQuantity}x</span>
       </div>
       <div class="result-group-list">
         ${group.dishes.map(renderResultRow).join("")}
@@ -275,9 +306,8 @@ function renderResultRow(dish) {
     <div class="result-row">
       <div class="result-meta">
         <strong>${escapeHtml(getDisplayDishName(dish))}</strong>
-        <span>${formatPersonCount(voters.length)}</span>
+        <span>${dish.quantity} Portion${dish.quantity === 1 ? "" : "en"} · ${formatPersonCount(voters.length)}</span>
       </div>
-      ${renderVoterMarkers(voters, true)}
     </div>
   `;
 }
@@ -295,15 +325,44 @@ function toggleVote(dishId) {
 
   if (selected) {
     state.votes[dishId] = votes.filter((name) => name !== voterName);
+    delete state.quantities[dishId]?.[voterName];
   } else {
-    const selectedCount = getSelectedIds().length;
-    if (selectedCount >= maxVotes) {
-      showToast(`Du kannst maximal ${maxVotes} Gerichte wählen.`);
-      return;
-    }
     state.votes[dishId] = [...votes, voterName];
+    state.quantities[dishId] = {
+      ...(state.quantities[dishId] ?? {}),
+      [voterName]: getVoterQuantity(dishId, voterName),
+    };
   }
 
+  saveState();
+  render();
+}
+
+function changeQuantity(dishId, change) {
+  const voterName = state.voterName.trim();
+  if (!voterName) {
+    voterNameInput.focus();
+    showToast("Bitte zuerst deinen Namen eintragen.");
+    return;
+  }
+
+  const voters = normalizeVoters(state.votes[dishId]);
+  if (!voters.includes(voterName)) {
+    state.votes[dishId] = [...voters, voterName];
+    state.quantities[dishId] = {
+      ...(state.quantities[dishId] ?? {}),
+      [voterName]: Math.max(1, Math.min(maxQuantity, 1 + Math.max(0, change))),
+    };
+    saveState();
+    render();
+    return;
+  }
+
+  const nextQuantity = Math.min(maxQuantity, Math.max(1, getVoterQuantity(dishId, voterName) + change));
+  state.quantities[dishId] = {
+    ...(state.quantities[dishId] ?? {}),
+    [voterName]: nextQuantity,
+  };
   saveState();
   render();
 }
@@ -317,6 +376,24 @@ function getSelectedIds() {
 function normalizeVoters(voters = []) {
   if (!Array.isArray(voters)) return [];
   return [...new Set(voters.map((name) => String(name).trim()).filter(Boolean))];
+}
+
+function normalizeQuantities(quantities = {}, voters = []) {
+  const cleanQuantities = {};
+  normalizeVoters(voters).forEach((name) => {
+    const quantity = Number(quantities?.[name]);
+    cleanQuantities[name] = Number.isFinite(quantity) ? Math.min(maxQuantity, Math.max(1, Math.round(quantity))) : 1;
+  });
+  return cleanQuantities;
+}
+
+function getVoterQuantity(dishId, voterName) {
+  const quantity = Number(state.quantities?.[dishId]?.[voterName]);
+  return Number.isFinite(quantity) ? Math.min(maxQuantity, Math.max(1, Math.round(quantity))) : 1;
+}
+
+function getDishTotalQuantity(dishId) {
+  return normalizeVoters(state.votes[dishId]).reduce((sum, name) => sum + getVoterQuantity(dishId, name), 0);
 }
 
 function getDisplayDishName(dish) {
@@ -435,6 +512,7 @@ async function saveRemoteState() {
     data: {
       menu: "the-sichuan",
       votes: state.votes,
+      quantities: state.quantities,
     },
     updated_at: new Date().toISOString(),
   });
@@ -449,6 +527,7 @@ async function saveRemoteState() {
 function applyRemoteState(remoteState) {
   applyingRemoteState = true;
   state.votes = buildVotes(remoteState.votes);
+  state.quantities = buildQuantities(remoteState.quantities, remoteState.votes);
   localStorage.setItem(storageKey, JSON.stringify(state));
   render();
   applyingRemoteState = false;
