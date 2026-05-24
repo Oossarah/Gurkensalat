@@ -21,6 +21,7 @@
   --text-hero: 2.6rem;
   --leading-tight: 1.08;
   --leading-normal: 1.35;
+  --sticky-category-top: 66px;
 }
 
 * {
@@ -265,11 +266,12 @@ select:focus {
 }
 
 .menu-group {
+  --category-bg: var(--surface);
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--category-bg);
   color: var(--ink);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .menu-group[open] {
@@ -277,32 +279,37 @@ select:focus {
 }
 
 .menu-group:nth-child(5n + 1) {
-  background: var(--accent);
+  --category-bg: var(--accent);
 }
 
 .menu-group:nth-child(5n + 2) {
-  background: var(--mint);
+  --category-bg: var(--mint);
 }
 
 .menu-group:nth-child(5n + 3) {
-  background: var(--lilac);
+  --category-bg: var(--lilac);
 }
 
 .menu-group:nth-child(5n + 4) {
-  background: var(--orange);
+  --category-bg: var(--orange);
 }
 
 .menu-group:nth-child(5n + 5) {
-  background: var(--olive);
+  --category-bg: var(--olive);
 }
 
 .menu-group summary {
+  position: sticky;
+  top: var(--sticky-category-top);
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   min-height: 58px;
   padding: 0 18px;
+  border-radius: 999px;
+  background: var(--category-bg);
   cursor: pointer;
   list-style: none;
 }
@@ -324,7 +331,7 @@ select:focus {
 }
 
 .menu-group[open] summary::after {
-  content: "-";
+  content: "–";
 }
 
 .menu-group summary span {
@@ -343,6 +350,23 @@ select:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 0 10px 10px;
+}
+
+.menu-group[open] .menu-list {
+  max-height: calc(100vh - var(--sticky-category-top) - 92px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.menu-group[open] .menu-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.menu-group[open] .menu-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--line);
 }
 
 .dish-card {
@@ -592,6 +616,10 @@ select:focus {
 }
 
 @media (max-width: 560px) {
+  :root {
+    --sticky-category-top: 54px;
+  }
+
   .app-shell {
     width: min(100% - 14px, 1280px);
     padding: 7px 0;
