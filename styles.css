@@ -275,7 +275,9 @@ select:focus {
 }
 
 .menu-group[open] {
-  border-radius: 28px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .menu-group:nth-child(5n + 1) {
@@ -307,9 +309,10 @@ select:focus {
   justify-content: space-between;
   gap: 12px;
   min-height: 58px;
-  padding: 0 18px;
+  border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--category-bg);
+  padding: 0 18px;
   cursor: pointer;
   list-style: none;
 }
@@ -334,6 +337,10 @@ select:focus {
   content: "–";
 }
 
+.menu-group[open] summary {
+  margin-bottom: 10px;
+}
+
 .menu-group summary span {
   font-size: var(--text-md);
   font-weight: 500;
@@ -353,20 +360,10 @@ select:focus {
 }
 
 .menu-group[open] .menu-list {
-  max-height: calc(100vh - var(--sticky-category-top) - 92px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line) transparent;
-}
-
-.menu-group[open] .menu-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.menu-group[open] .menu-list::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--category-bg);
+  padding: 10px;
 }
 
 .dish-card {
